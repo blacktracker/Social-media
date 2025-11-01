@@ -1,8 +1,9 @@
 import React, { useState, useEffect, createContext } from 'react';
-import { AppPhase, VideoData, GeneratedContent, Post, Platform, AppContextType, EditState, EditingSuggestions, User, AIConfig, AIModel, Activity } from './types';
+import { AppPhase, VideoData, GeneratedContent, Post, Platform, AppContextType, EditState, EditingSuggestions, User, AIConfig, AIModel, Activity, Connection, ImageData, TaskModelSelection } from './types';
 import Sidebar from './components/Sidebar';
-import StartPhase from './components/UploadPhase';
+import UploadPhase from './components/UploadPhase';
 import EditingPhase from './components/EditingPhase';
+import ImageEditingPhase from './components/ImageEditingPhase';
 import GenerationPhase from './components/GenerationPhase';
 import EngagementPhase from './components/EngagementPhase';
 import AnalyticsPhase from './components/AnalyticsPhase';
@@ -17,21 +18,41 @@ const App: React.FC = () => {
     const [phase, setPhase] = useState<AppPhase>(AppPhase.DASHBOARD);
     const [videoData, setVideoData] = useState<VideoData | null>(null);
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    const [imageData, setImageData] = useState<ImageData | null>(null);
     const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
     const [edits, setEdits] = useState<EditState | null>(null);
     const [editingSuggestions, setEditingSuggestions] = useState<EditingSuggestions | null>(null);
-    const [connectedPlatforms, setConnectedPlatforms] = useState<Record<Platform, boolean>>({
-        YouTube: true,
-        Instagram: true,
-        TikTok: true,
-        Facebook: false,
-        Pinterest: false,
+    const [connectedPlatforms, setConnectedPlatforms] = useState<Record<Platform, Connection>>({
+        YouTube: { connected: true, username: 'creator_youtube' },
+        Instagram: { connected: true, username: 'creator_ig' },
+        TikTok: { connected: true, username: 'creator_tt' },
+        Facebook: { connected: false, username: null },
+        Pinterest: { connected: false, username: null },
     });
     const [error, setError] = useState<string | null>(null);
     const [user, setUser] = useState<User>({ name: 'Content Creator', avatar: null });
-    const [aiConfig, setAiConfig] = useState<AIConfig>({ model: AIModel.GEMINI, apiKey: null });
+    const [aiConfig, setAiConfig] = useState<AIConfig>({
+        [AIModel.GEMINI]: { apiKey: null },
+        [AIModel.GPT]: { apiKey: null },
+        [AIModel.DEEPSEEK]: { apiKey: null },
+        [AIModel.QWEN]: { apiKey: null },
+        [AIModel.KIMI]: { apiKey: null },
+        [AIModel.HUGGINGFACE]: { apiKey: null },
+    });
+    const [taskModelSelection, setTaskModelSelection] = useState<TaskModelSelection>({
+        contentGeneration: AIModel.GEMINI,
+        editingSuggestions: AIModel.GEMINI,
+        commentAnalysis: AIModel.GEMINI,
+        analyticsGeneration: AIModel.GEMINI,
+        postTimeSuggestion: AIModel.GEMINI,
+        metadataGeneration: AIModel.GEMINI,
+        imageEditing: AIModel.GEMINI
+    });
     const [activityLog, setActivityLog] = useState<Activity[]>([]);
+    const [isGenerating, setIsGenerating] = useState<boolean>(false);
+    const [generationProgress, setGenerationProgress] = useState<string | null>(null);
+
 
     useEffect(() => {
         if (videoData?.file) {
@@ -50,37 +71,39 @@ const App: React.FC = () => {
         setActivityLog(prev => [newActivity, ...prev].slice(0, 10)); // Keep last 10 activities
     };
 
-    const handleGenerateFromUpload = async (data: VideoData) => {
-        setVideoData(data);
+    const resetForNewContent = () => {
+        setVideoData(null);
+        setVideoUrl(null);
+        setImageData(null);
         setError(null);
         setEdits(null);
         setGeneratedContent(null);
         setEditingSuggestions(null);
-        setPhase(AppPhase.EDITING); // Navigate immediately
+    }
+
+    const handleGenerateFromUpload = async (data: VideoData) => {
+        resetForNewContent();
+        setVideoData(data);
+        setPhase(AppPhase.EDITING);
         addActivity(`Uploaded video: "${data.file?.name}"`);
         try {
-            const { content, suggestions } = await generateContentAndSuggestions(data);
+            const { content, suggestions } = await generateContentAndSuggestions(data, { aiConfig, taskModelSelection });
             setGeneratedContent(content);
             setEditingSuggestions(suggestions);
             addActivity(`Generated content for "${data.title}"`);
         } catch (e) {
             setError('Failed to generate content. Please check your API key and try again.');
             console.error(e);
-            setPhase(AppPhase.UPLOAD); // Go back if it fails
+            setPhase(AppPhase.UPLOAD);
         }
     };
 
     const handleGenerateFromIdea = async (idea: string) => {
-        setVideoData(null);
-        setVideoUrl(null);
-        setError(null);
-        setEdits(null);
-        setGeneratedContent(null);
-        setEditingSuggestions(null);
-        setPhase(AppPhase.EDITING); // Navigate immediately
+        resetForNewContent();
+        setPhase(AppPhase.EDITING);
         addActivity(`Brainstorming from idea: "${idea}"`);
         try {
-            const { videoData: newVideoData, generatedContent: newGeneratedContent, suggestions } = await generateContentFromIdea(idea);
+            const { videoData: newVideoData, generatedContent: newGeneratedContent, suggestions } = await generateContentFromIdea(idea, { aiConfig, taskModelSelection });
             setVideoData(newVideoData);
             setGeneratedContent(newGeneratedContent);
             setEditingSuggestions(suggestions);
@@ -88,26 +111,27 @@ const App: React.FC = () => {
         } catch (e) {
             setError('Failed to generate content from idea. Please check your API key and try again.');
             console.error(e);
-            setPhase(AppPhase.UPLOAD); // Go back if it fails
+            setPhase(AppPhase.UPLOAD);
         }
     };
 
-    const appContextValue: AppContextType = {
-        phase, setPhase, videoData, setVideoData, videoUrl, setVideoUrl,
-        generatedContent, setGeneratedContent, posts, setPosts,
-        connectedPlatforms, setConnectedPlatforms, edits, setEdits, 
-        editingSuggestions, setEditingSuggestions, error, setError,
-        user, setUser, aiConfig, setAiConfig, activityLog, addActivity
+    const handleImageEditNav = (data: ImageData) => {
+        resetForNewContent();
+        setImageData(data);
+        setPhase(AppPhase.IMAGE_EDITING);
+        addActivity(`Editing image: "${data.file?.name}"`);
     };
-    
+
     const renderPhase = () => {
         switch (phase) {
             case AppPhase.DASHBOARD:
                 return <Dashboard />;
             case AppPhase.UPLOAD:
-                return <StartPhase onGenerateFromUpload={handleGenerateFromUpload} onGenerateFromIdea={handleGenerateFromIdea} />;
+                return <UploadPhase onGenerateFromUpload={handleGenerateFromUpload} onGenerateFromIdea={handleGenerateFromIdea} onImageEditNav={handleImageEditNav}/>;
             case AppPhase.EDITING:
                 return <EditingPhase />;
+            case AppPhase.IMAGE_EDITING:
+                return <ImageEditingPhase />;
             case AppPhase.GENERATION:
                 return <GenerationPhase />;
             case AppPhase.CALENDAR:
@@ -123,12 +147,30 @@ const App: React.FC = () => {
         }
     };
 
+    const contextValue: AppContextType = {
+        phase, setPhase,
+        videoData, setVideoData,
+        videoUrl, setVideoUrl,
+        imageData, setImageData,
+        generatedContent, setGeneratedContent,
+        posts, setPosts,
+        edits, setEdits,
+        editingSuggestions, setEditingSuggestions,
+        connectedPlatforms, setConnectedPlatforms,
+        error, setError,
+        user, setUser,
+        aiConfig, setAiConfig,
+        taskModelSelection, setTaskModelSelection,
+        activityLog, addActivity,
+        isGenerating, setIsGenerating,
+        generationProgress, setGenerationProgress
+    };
+
     return (
-        <AppContext.Provider value={appContextValue}>
-            <div className="bg-gray-900 text-white min-h-screen flex">
+        <AppContext.Provider value={contextValue}>
+            <div className="flex h-screen bg-gray-900 text-white">
                 <Sidebar />
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-                    {error && <div className="bg-red-500 text-white p-4 rounded-md mb-4">{error}</div>}
+                <main className="flex-1 p-8 overflow-y-auto">
                     {renderPhase()}
                 </main>
             </div>

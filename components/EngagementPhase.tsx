@@ -16,13 +16,13 @@ const platformIcons: Record<Platform, React.ReactNode> = {
 const EngagementPhase: React.FC = () => {
     const appContext = useContext(AppContext);
     if (!appContext) return null;
-    const { posts, videoData, setPhase } = appContext;
+    const { posts, videoData, setPhase, aiConfig, taskModelSelection } = appContext;
     const [localPosts, setLocalPosts] = useState<Post[]>(posts);
     const [isLoading, setIsLoading] = useState(false);
 
     const processEngagement = useCallback(async (post: Post, index: number) => {
         if (!videoData) return;
-        const fetchedComments = await generateCommentsWithReplies(post.title, videoData.description);
+        const fetchedComments = await generateCommentsWithReplies(post.title, videoData.description, { aiConfig, taskModelSelection });
         
         const processedComments = fetchedComments.map((comment: Comment) => {
             if (comment.sentiment === 'positive') {
@@ -36,7 +36,7 @@ const EngagementPhase: React.FC = () => {
             newPosts[index].comments = processedComments;
             return newPosts;
         });
-    }, [videoData]);
+    }, [videoData, aiConfig, taskModelSelection]);
 
     useEffect(() => {
         const runEngagement = async () => {

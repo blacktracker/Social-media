@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../App';
-import { Platform, AIModel } from '../types';
-import { YouTubeIcon, InstagramIcon, TikTokIcon, FacebookIcon, PinterestIcon, ProfileIcon, KeyIcon, SaveIcon } from './icons/index';
+import { Platform, AIModel, AITask, TaskModelSelection, AIConfig } from '../types';
+import { YouTubeIcon, InstagramIcon, TikTokIcon, FacebookIcon, PinterestIcon, ProfileIcon, KeyIcon, SaveIcon, LightbulbIcon } from './icons/index';
 
 const platformDetails: Record<Platform, { icon: React.ReactNode, color: string }> = {
     YouTube: { icon: <YouTubeIcon className="w-8 h-8"/>, color: 'text-red-500' },
@@ -11,23 +11,106 @@ const platformDetails: Record<Platform, { icon: React.ReactNode, color: string }
     Pinterest: { icon: <PinterestIcon className="w-8 h-8"/>, color: 'text-red-700' },
 };
 
+const taskLabels: Record<AITask, string> = {
+    metadataGeneration: "Initial Video Analysis",
+    contentGeneration: "Main Content & Idea Generation",
+    editingSuggestions: "Editing Suggestions",
+    imageEditing: "AI Image Editing",
+    postTimeSuggestion: "Best Time to Post Suggestion",
+    commentAnalysis: "Comment Sentiment Analysis",
+    analyticsGeneration: "Performance Analytics Generation"
+};
+
 const ProfilePhase: React.FC = () => {
     const appContext = useContext(AppContext);
     if (!appContext) return null;
 
-    const { user, setUser, connectedPlatforms, setConnectedPlatforms, aiConfig, setAiConfig, addActivity } = appContext;
+    const { user, setUser, connectedPlatforms, setConnectedPlatforms, aiConfig, setAiConfig, taskModelSelection, setTaskModelSelection, addActivity } = appContext;
 
     const [activeTab, setActiveTab] = useState<'profile' | 'connections' | 'backend'>('profile');
     const [tempUsername, setTempUsername] = useState(user.name);
-    const [tempApiKey, setTempApiKey] = useState(aiConfig.apiKey || '');
-    const [tempModel, setTempModel] = useState(aiConfig.model);
+    const [tempAiConfig, setTempAiConfig] = useState<AIConfig>(aiConfig);
+    const [tempTaskModels, setTempTaskModels] = useState<TaskModelSelection>(taskModelSelection);
+    const [isConnecting, setIsConnecting] = useState<Platform | null>(null);
 
-    const toggleConnection = (platform: Platform) => {
-        setConnectedPlatforms(prev => {
-            const newStatus = !prev[platform];
-            addActivity(`${newStatus ? 'Connected' : 'Disconnected'} ${platform} account.`);
-            return { ...prev, [platform]: newStatus };
-        });
+    const handleDisconnect = (platform: Platform) => {
+        setConnectedPlatforms(prev => ({
+            ...prev,
+            [platform]: { connected: false, username: null }
+        }));
+        addActivity(`Disconnected ${platform} account.`);
+    };
+    
+    const handleConnect = (platform: Platform) => {
+        setIsConnecting(platform);
+        const width = 600, height = 700;
+        const left = (window.innerWidth / 2) - (width / 2);
+        const top = (window.innerHeight / 2) - (height / 2);
+
+        const authWindow = window.open('', '_blank', `width=${width},height=${height},top=${top},left=${left}`);
+
+        if (authWindow) {
+            authWindow.document.write(`
+                <html>
+                <head>
+                    <title>Authenticate with ${platform}</title>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                </head>
+                <body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+                    <div class="bg-gray-800 p-8 rounded-lg shadow-xl text-center w-full max-w-sm">
+                        <h1 class="text-2xl font-bold mb-4">AI Social Studio</h1>
+                        <p class="text-gray-400 mb-6">is requesting permission to access your ${platform} account.</p>
+                        <div class="bg-gray-700 p-4 rounded-lg mb-6">
+                            <p class="font-semibold text-white">This will allow AI Social Studio to:</p>
+                            <ul class="text-sm text-gray-300 list-disc list-inside mt-2 text-left">
+                                <li>View your profile information</li>
+                                <li>Publish posts and videos on your behalf</li>
+                                <li>View post analytics and comments</li>
+                            </ul>
+                        </div>
+                        <button id="grant" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Grant Access</button>
+                        <button id="deny" class="w-full mt-2 text-gray-400 text-sm hover:text-white">Deny</button>
+                    </div>
+                    <script>
+                        document.getElementById('grant').onclick = () => {
+                            window.opener.postMessage({ type: 'auth-success', platform: '${platform}' }, '*');
+                            window.close();
+                        };
+                        document.getElementById('deny').onclick = () => {
+                            window.opener.postMessage({ type: 'auth-fail', platform: '${platform}' }, '*');
+                            window.close();
+                        };
+                    </script>
+                </body>
+                </html>
+            `);
+        }
+
+        const handleAuthMessage = (event: MessageEvent) => {
+            if (event.source !== authWindow) return;
+
+            if (event.data.type === 'auth-success' && event.data.platform === platform) {
+                setConnectedPlatforms(prev => ({
+                    ...prev,
+                    [platform]: { connected: true, username: `creator_${platform.toLowerCase()}` }
+                }));
+                addActivity(`Successfully connected ${platform} account.`);
+            } else if (event.data.type === 'auth-fail') {
+                 addActivity(`Connection to ${platform} was denied.`);
+            }
+            setIsConnecting(null);
+            window.removeEventListener('message', handleAuthMessage);
+        };
+        
+        window.addEventListener('message', handleAuthMessage);
+
+        const timer = setInterval(() => {
+            if (authWindow && authWindow.closed) {
+                setIsConnecting(null);
+                window.removeEventListener('message', handleAuthMessage);
+                clearInterval(timer);
+            }
+        }, 500);
     };
 
     const handleProfileSave = (e: React.FormEvent) => {
@@ -39,9 +122,24 @@ const ProfilePhase: React.FC = () => {
     
     const handleBackendSave = (e: React.FormEvent) => {
         e.preventDefault();
-        setAiConfig({ model: tempModel, apiKey: tempApiKey });
-        addActivity(`Set AI backend to ${tempModel}.`);
+        setAiConfig(tempAiConfig);
+        setTaskModelSelection(tempTaskModels);
+        addActivity(`Updated AI backend settings.`);
         alert('AI backend settings saved!');
+    };
+    
+    const handleApiKeyChange = (model: AIModel, key: string) => {
+        setTempAiConfig(prev => ({
+            ...prev,
+            [model]: { apiKey: key }
+        }));
+    };
+    
+    const handleTaskModelChange = (task: AITask, model: AIModel) => {
+        setTempTaskModels(prev => ({
+            ...prev,
+            [task]: model
+        }));
     };
 
     const renderContent = () => {
@@ -84,22 +182,30 @@ const ProfilePhase: React.FC = () => {
                  return (
                     <div className="space-y-6">
                         {(Object.keys(platformDetails) as Platform[]).map(platform => {
-                            const isConnected = connectedPlatforms[platform];
+                            const connection = connectedPlatforms[platform];
                             const details = platformDetails[platform];
                             return (
                                 <div key={platform} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
                                     <div className="flex items-center gap-4">
                                         <span className={details.color}>{details.icon}</span>
-                                        <span className="text-xl font-semibold text-white">{platform}</span>
+                                        <div>
+                                            <span className="text-xl font-semibold text-white">{platform}</span>
+                                             {connection.connected && connection.username && (
+                                                <p className="text-xs text-gray-300">as @{connection.username}</p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-4">
-                                        <span className={`text-sm font-medium ${isConnected ? 'text-green-400' : 'text-gray-400'}`}>
-                                            {isConnected ? 'Connected' : 'Not Connected'}
-                                        </span>
-                                        <button onClick={() => toggleConnection(platform)} className={`font-bold py-2 px-6 rounded-md transition-colors w-32 text-center ${ isConnected ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'} text-white`}>
-                                            {isConnected ? 'Disconnect' : 'Connect'}
-                                        </button>
-                                    </div>
+                                    <button 
+                                        onClick={() => connection.connected ? handleDisconnect(platform) : handleConnect(platform)} 
+                                        disabled={isConnecting !== null}
+                                        className={`font-bold py-2 px-6 rounded-md transition-colors w-36 text-center disabled:opacity-50 disabled:cursor-wait ${ 
+                                            connection.connected 
+                                            ? 'bg-red-600 hover:bg-red-700' 
+                                            : 'bg-indigo-600 hover:bg-indigo-700'
+                                        } text-white`}
+                                    >
+                                        {isConnecting === platform ? 'Connecting...' : (connection.connected ? 'Disconnect' : 'Connect')}
+                                    </button>
                                 </div>
                             );
                         })}
@@ -107,27 +213,59 @@ const ProfilePhase: React.FC = () => {
                  );
             case 'backend':
                 return (
-                    <form onSubmit={handleBackendSave} className="space-y-6">
-                         <div className="flex items-center gap-3 text-indigo-300">
-                             <KeyIcon className="w-5 h-5" />
-                            <h3 className="text-lg font-semibold">AI Backend Configuration</h3>
-                        </div>
+                    <form onSubmit={handleBackendSave} className="space-y-8">
                         <div>
-                            <label htmlFor="ai-model" className="block text-sm font-medium text-gray-300 mb-1">AI Model</label>
-                            <select id="ai-model" value={tempModel} onChange={e => setTempModel(e.target.value as AIModel)} className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                             <div className="flex items-center gap-3 text-indigo-300 mb-4">
+                                <KeyIcon className="w-5 h-5" />
+                                <h3 className="text-lg font-semibold">API Key Management</h3>
+                            </div>
+                            <div className="space-y-4">
                                 {Object.values(AIModel).map(model => (
-                                    <option key={model} value={model}>{model}</option>
+                                    <div key={model}>
+                                        <label htmlFor={`api-key-${model}`} className="block text-sm font-medium text-gray-300 mb-1">{model} API Key</label>
+                                        <input 
+                                            type="password" 
+                                            id={`api-key-${model}`} 
+                                            value={tempAiConfig[model].apiKey || ''} 
+                                            onChange={e => handleApiKeyChange(model, e.target.value)} 
+                                            placeholder={`Enter your ${model} API key`}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                                        />
+                                    </div>
                                 ))}
-                            </select>
-                            <p className="text-xs text-gray-400 mt-1">Note: This is a simulation. All requests will use the Gemini API.</p>
+                            </div>
                         </div>
+                        
+                        <div className="border-t border-gray-700 my-8"></div>
+
                         <div>
-                            <label htmlFor="api-key"  className="block text-sm font-medium text-gray-300 mb-1">API Key for {tempModel}</label>
-                            <input type="password" id="api-key" value={tempApiKey} onChange={e => setTempApiKey(e.target.value)} placeholder="Enter your API key" className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                            <div className="flex items-center gap-3 text-indigo-300 mb-4">
+                                <LightbulbIcon className="w-5 h-5" />
+                                <h3 className="text-lg font-semibold">Task Model Assignment</h3>
+                            </div>
+                             <div className="space-y-4">
+                                {(Object.keys(taskLabels) as AITask[]).map(task => (
+                                    <div key={task} className="grid grid-cols-2 items-center">
+                                        <label htmlFor={`task-model-${task}`} className="text-sm font-medium text-gray-300">{taskLabels[task]}</label>
+                                        <select 
+                                            id={`task-model-${task}`} 
+                                            value={tempTaskModels[task]} 
+                                            onChange={e => handleTaskModelChange(task, e.target.value as AIModel)}
+                                            className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                        >
+                                            {Object.values(AIModel).map(model => (
+                                                <option key={model} value={model}>{model}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-xs text-gray-400 mt-4">Note: This is a simulation. All requests will currently use the Gemini API regardless of selection.</p>
                         </div>
-                         <div className="flex justify-end">
+                        
+                         <div className="flex justify-end pt-4">
                             <button type="submit" className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-colors">
-                                <SaveIcon className="w-5 h-5"/> Save Settings
+                                <SaveIcon className="w-5 h-5"/> Save AI Settings
                             </button>
                         </div>
                     </form>

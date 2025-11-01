@@ -4,6 +4,7 @@ export enum AppPhase {
   DASHBOARD = 'DASHBOARD',
   UPLOAD = 'UPLOAD',
   EDITING = 'EDITING',
+  IMAGE_EDITING = 'IMAGE_EDITING',
   GENERATION = 'GENERATION',
   CALENDAR = 'CALENDAR',
   ENGAGEMENT = 'ENGAGEMENT',
@@ -19,19 +20,37 @@ export interface VideoData {
   contentType: string;
 }
 
+export interface ImageData {
+    file: File | null;
+    base64: string;
+    prompt: string;
+}
+
+export type OverlayPosition =
+  | 'top-left' | 'top-center' | 'top-right'
+  | 'center-left' | 'center' | 'center-right'
+  | 'bottom-left' | 'bottom-center' | 'bottom-right';
+
+// FIX: Define a reusable Overlay interface to fix the extension error.
+export interface Overlay {
+    text: string;
+    timestamp: number;
+    style: string;
+    position: OverlayPosition;
+    animation: 'fade-in' | 'slide-up' | 'none';
+}
+
 export interface EditingSuggestions {
     general: string[];
     trimming: { startTime: number; endTime: number; reason: string; } | null;
-    overlays: {
-        text: string;
-        timestamp: number;
-        style: string;
-        position: 'top-left' | 'top-center' | 'top-right' | 'center' | 'bottom-left' | 'bottom-center' | 'bottom-right';
-        animation: 'fade-in' | 'slide-up' | 'none';
-    }[];
+    overlays: Overlay[];
     filter: { name: string; reason: string; } | null;
     transition: { type: 'cross-fade' | 'zoom-in'; timestamp: number; reason: string; } | null;
     visualEffect: { type: 'glitch' | 'slow-motion'; timestamp: number; duration: number; reason: string; } | null;
+}
+
+export interface AppliedOverlay extends Overlay {
+    suggestionIndex: number;
 }
 
 export type Platform = 'YouTube' | 'Instagram' | 'TikTok' | 'Facebook' | 'Pinterest';
@@ -60,6 +79,8 @@ export interface Post {
     description:string;
     hashtags: string[];
     scheduledAt: string;
+    mediaUrl: string; // Can be video or image URL
+    mediaType: 'video' | 'image';
     analytics: {
         views: number;
         likes: number;
@@ -71,7 +92,7 @@ export interface Post {
 
 export interface EditState {
     trim: { start: number; end: number } | null;
-    overlays: number[];
+    overlays: AppliedOverlay[];
     filter: string | null;
     transition: { type: string; timestamp: number; reason: string; } | null;
     effect: { type: string; timestamp: number; duration: number; reason: string; } | null;
@@ -87,10 +108,11 @@ export enum AIModel {
     HUGGINGFACE = 'HuggingFace'
 }
 
-export interface AIConfig {
-    model: AIModel;
-    apiKey: string | null;
-}
+export type AIConfig = Record<AIModel, { apiKey: string | null }>;
+
+export type AITask = 'contentGeneration' | 'editingSuggestions' | 'commentAnalysis' | 'analyticsGeneration' | 'postTimeSuggestion' | 'metadataGeneration' | 'imageEditing';
+export type TaskModelSelection = Record<AITask, AIModel>;
+
 
 export interface User {
     name: string;
@@ -103,6 +125,11 @@ export interface Activity {
     timestamp: string;
 }
 
+export interface Connection {
+    connected: boolean;
+    username: string | null;
+}
+
 export interface AppContextType {
   phase: AppPhase;
   setPhase: Dispatch<SetStateAction<AppPhase>>;
@@ -110,14 +137,16 @@ export interface AppContextType {
   setVideoData: Dispatch<SetStateAction<VideoData | null>>;
   videoUrl: string | null;
   setVideoUrl: Dispatch<SetStateAction<string | null>>;
+  imageData: ImageData | null;
+  setImageData: Dispatch<SetStateAction<ImageData | null>>;
   generatedContent: GeneratedContent | null;
   setGeneratedContent: Dispatch<SetStateAction<GeneratedContent | null>>;
   editingSuggestions: EditingSuggestions | null;
   setEditingSuggestions: Dispatch<SetStateAction<EditingSuggestions | null>>;
   posts: Post[];
   setPosts: Dispatch<SetStateAction<Post[]>>;
-  connectedPlatforms: Record<Platform, boolean>;
-  setConnectedPlatforms: Dispatch<SetStateAction<Record<Platform, boolean>>>;
+  connectedPlatforms: Record<Platform, Connection>;
+  setConnectedPlatforms: Dispatch<SetStateAction<Record<Platform, Connection>>>;
   edits: EditState | null;
   setEdits: Dispatch<SetStateAction<EditState | null>>;
   error: string | null;
@@ -126,6 +155,12 @@ export interface AppContextType {
   setUser: Dispatch<SetStateAction<User>>;
   aiConfig: AIConfig;
   setAiConfig: Dispatch<SetStateAction<AIConfig>>;
+  taskModelSelection: TaskModelSelection;
+  setTaskModelSelection: Dispatch<SetStateAction<TaskModelSelection>>;
   activityLog: Activity[];
   addActivity: (text: string) => void;
+  isGenerating: boolean;
+  setIsGenerating: Dispatch<SetStateAction<boolean>>;
+  generationProgress: string | null;
+  setGenerationProgress: Dispatch<SetStateAction<string | null>>;
 }

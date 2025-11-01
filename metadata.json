@@ -1,5 +1,7 @@
 {
   "name": "Social Media Content Automation Workflow",
   "description": "An AI-powered workflow to streamline video content creation, optimization, and distribution across multiple social media platforms, including automated engagement and performance analytics.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

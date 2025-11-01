@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect, useMemo } from 'react';
 import { AppContext } from '../App';
-import { AppPhase, EditState } from '../types';
+import { AppPhase, EditState, OverlayPosition } from '../types';
 import { LightbulbIcon, CutIcon, TextIcon, FilterIcon, TransitionIcon, SparklesIcon, ResetIcon, UndoIcon } from './icons/index';
 import Loader from './Loader';
 
@@ -46,6 +46,28 @@ const EditingPhase: React.FC = () => {
         setEditHistory([]);
     };
 
+    const toggleOverlay = (suggestionIndex: number) => {
+        if (!edits || !suggestions) return;
+        const isApplied = edits.overlays.some(o => o.suggestionIndex === suggestionIndex);
+        
+        if (isApplied) {
+            applyEdit({ overlays: edits.overlays.filter(o => o.suggestionIndex !== suggestionIndex) });
+        } else {
+            const suggestion = suggestions.overlays[suggestionIndex];
+            if (suggestion) {
+                applyEdit({ overlays: [...edits.overlays, { ...suggestion, suggestionIndex }] });
+            }
+        }
+    };
+
+    const handleOverlayPositionChange = (suggestionIndex: number, newPosition: OverlayPosition) => {
+        if (!edits) return;
+        const newOverlays = edits.overlays.map(o =>
+            o.suggestionIndex === suggestionIndex ? { ...o, position: newPosition } : o
+        );
+        applyEdit({ overlays: newOverlays });
+    };
+
     const filterMap: Record<string, string> = {
         'Vibrant': 'saturate(1.5) contrast(1.1)',
         'Cinematic': 'contrast(1.2) saturate(1.1)',
@@ -53,11 +75,13 @@ const EditingPhase: React.FC = () => {
         'Black & White': 'grayscale(1)',
     };
     
-    const positionClasses: Record<string, string> = {
+    const positionClasses: Record<OverlayPosition, string> = {
         'top-left': 'top-4 left-4',
         'top-center': 'top-4 left-1/2 -translate-x-1/2',
         'top-right': 'top-4 right-4 text-right',
+        'center-left': 'top-1/2 left-4 -translate-y-1/2',
         'center': 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center',
+        'center-right': 'top-1/2 right-4 -translate-y-1/2 text-right',
         'bottom-left': 'bottom-4 left-4',
         'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2 text-center',
         'bottom-right': 'bottom-4 right-4 text-right',
@@ -105,6 +129,12 @@ const EditingPhase: React.FC = () => {
         return <div className="flex flex-col items-center justify-center h-full"><Loader/><p className="mt-4">AI is generating content & suggestions...</p></div>
     }
 
+    const overlayPositions: OverlayPosition[] = [
+        'top-left', 'top-center', 'top-right',
+        'center-left', 'center', 'center-right',
+        'bottom-left', 'bottom-center', 'bottom-right'
+    ];
+
     return (
         <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold text-center mb-2 text-indigo-400">Phase 2: AI-Enhanced Editing</h2>
@@ -125,20 +155,18 @@ const EditingPhase: React.FC = () => {
                                     <source src={videoSrc} type={videoData?.file?.type} />
                                     Your browser does not support the video tag.
                                 </video>
-                                {suggestions?.overlays.map((overlay, i) =>
-                                    edits.overlays.includes(i) && (
-                                        <div
-                                            key={i}
-                                            className={`absolute text-white font-bold p-2 bg-black bg-opacity-60 rounded-lg pointer-events-none w-11/12
-                                                ${positionClasses[overlay.position] || 'bottom-4 left-1/2 -translate-x-1/2'}
-                                                ${animationClasses[overlay.animation] || ''}
-                                                ${overlay.position.includes('center') ? 'animate-slide-up-center' : 'animate-slide-up'}`
-                                            }
-                                            style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.7)' }}
-                                        >
-                                            {overlay.text}
-                                        </div>
-                                    )
+                                {edits.overlays.map((overlay, i) =>
+                                    <div
+                                        key={`applied-overlay-${i}`}
+                                        className={`absolute text-white font-bold p-2 bg-black bg-opacity-60 rounded-lg pointer-events-none w-11/12
+                                            ${positionClasses[overlay.position] || 'bottom-center'}
+                                            ${animationClasses[overlay.animation] || ''}
+                                            ${overlay.position.includes('center') ? 'animate-slide-up-center' : 'animate-slide-up'}`
+                                        }
+                                        style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.7)' }}
+                                    >
+                                        {overlay.text}
+                                    </div>
                                 )}
                             </div>
                         ) : (
@@ -156,7 +184,7 @@ const EditingPhase: React.FC = () => {
                                 style={{ left: `${(suggestions.trimming.startTime / 60) * 100}%`, width: `${((suggestions.trimming.endTime - suggestions.trimming.startTime) / 60) * 100}%` }}>
                             </div>
                         )}
-                        {suggestions?.overlays.map((overlay, i) => edits.overlays.includes(i) && (
+                        {edits.overlays.map((overlay, i) => (
                             <div key={`ol-tl-${i}`} className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-400 rounded-full" title={`Overlay: "${overlay.text}" at ${overlay.timestamp}s`}
                                 style={{ left: `${(overlay.timestamp / 60) * 100}%` }}>
                             </div>
@@ -217,15 +245,35 @@ const EditingPhase: React.FC = () => {
 
                              <div className="bg-gray-900/70 p-3 rounded-md">
                                 <h4 className="font-bold text-indigo-400 mb-2 flex items-center gap-2"><TextIcon className="w-4 h-4"/> Text Overlays</h4>
-                                <ul className="space-y-2">
-                                    {suggestions.overlays.map((overlay, i) => (
-                                        <li key={i} className="text-sm text-gray-300 flex justify-between items-center">
-                                            <span>At <b className="text-white">{overlay.timestamp}s</b>: <i className="text-white">"{overlay.text}"</i></span>
-                                            <button onClick={() => applyEdit({ overlays: [...edits.overlays, i] })} disabled={edits.overlays.includes(i)} className="text-xs font-semibold py-1 px-3 rounded-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-green-600 disabled:cursor-not-allowed transition-colors flex-shrink-0 ml-2">
-                                                {edits.overlays.includes(i) ? '✓ Added' : 'Add'}
-                                            </button>
+                                <ul className="space-y-3">
+                                    {suggestions.overlays.map((overlay, i) => {
+                                        const appliedOverlay = edits.overlays.find(o => o.suggestionIndex === i);
+                                        return (
+                                        <li key={i} className="text-sm text-gray-300 bg-gray-800/50 p-2 rounded-md">
+                                            <div className="flex justify-between items-center">
+                                                <span>At <b className="text-white">{overlay.timestamp}s</b>: <i className="text-white">"{overlay.text}"</i></span>
+                                                <button onClick={() => toggleOverlay(i)} className={`text-xs font-semibold py-1 px-3 rounded-full hover:bg-indigo-700 transition-colors flex-shrink-0 ml-2 ${appliedOverlay ? 'bg-red-600' : 'bg-indigo-600'}`}>
+                                                    {appliedOverlay ? 'Remove' : 'Add'}
+                                                </button>
+                                            </div>
+                                            {appliedOverlay && (
+                                                <div className="mt-2 pt-2 border-t border-gray-700 flex items-center gap-2">
+                                                    <label className="text-xs text-gray-400 font-semibold">Position:</label>
+                                                    <select
+                                                        value={appliedOverlay.position}
+                                                        onChange={(e) => handleOverlayPositionChange(i, e.target.value as OverlayPosition)}
+                                                        className="bg-gray-700 border border-gray-600 text-white text-xs rounded-md px-2 py-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                                    >
+                                                        {overlayPositions.map(pos => (
+                                                             <option key={pos} value={pos}>
+                                                                {pos.replace('-', ' ')}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            )}
                                         </li>
-                                    ))}
+                                    )})}
                                 </ul>
                             </div>
                             

@@ -20,38 +20,28 @@ const filterMap: Record<string, string> = {
     'Black & White': 'grayscale(1)',
 };
 
-const positionClasses: Record<string, string> = {
-    'top-left': 'top-2 left-2',
-    'top-center': 'top-2 left-1/2 -translate-x-1/2',
-    'top-right': 'top-2 right-2 text-right',
-    'center': 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center',
-    'bottom-left': 'bottom-2 left-2',
-    'bottom-center': 'bottom-2 left-1/2 -translate-x-1/2 text-center',
-    'bottom-right': 'bottom-2 right-2 text-right',
-};
-
 // Platform-specific aspect ratios
 const platformCrops: Record<Platform, string> = {
     YouTube: 'aspect-video',
-    Instagram: 'aspect-square', // Defaulting to 1:1 for posts, could be 4:5
+    Instagram: 'aspect-square',
     TikTok: 'aspect-[9/16]',
-    Facebook: 'aspect-square', // Often 1:1, but flexible
+    Facebook: 'aspect-square',
     Pinterest: 'aspect-[2/3]',
 };
-
 
 interface PlatformCardProps {
     platform: Platform;
     content: PlatformContent;
-    videoUrl: string | null;
-    edits: EditState;
+    mediaUrl: string | null;
+    mediaType: 'video' | 'image';
+    edits: EditState | null;
     onContentChange: (platform: Platform, field: 'title' | 'description' | 'hashtags', value: string) => void;
     onSchedule: (platform: Platform, scheduleTime: string) => void;
     isSuggestingTime: boolean;
     suggestedTime?: string;
 }
 
-const PlatformScheduleCard: FC<PlatformCardProps> = ({ platform, content, videoUrl, edits, onContentChange, onSchedule, isSuggestingTime, suggestedTime }) => {
+const PlatformScheduleCard: FC<PlatformCardProps> = ({ platform, content, mediaUrl, mediaType, edits, onContentChange, onSchedule, isSuggestingTime, suggestedTime }) => {
     const [scheduleDateTime, setScheduleDateTime] = useState('');
     const appContext = useContext(AppContext);
 
@@ -60,19 +50,19 @@ const PlatformScheduleCard: FC<PlatformCardProps> = ({ platform, content, videoU
             setScheduleDateTime(new Date(content.scheduledAt).toISOString().substring(0, 16));
         } else if (suggestedTime) {
             setScheduleDateTime(suggestedTime);
-        } else if (!isSuggestingTime) { // Fallback if no suggestion and not loading
+        } else if (!isSuggestingTime) {
             const fallbackTime = new Date(Date.now() + 60 * 60 * 1000).toISOString().substring(0, 16);
             setScheduleDateTime(fallbackTime);
         }
     }, [content.scheduledAt, suggestedTime, isSuggestingTime]);
     
-    const videoSrc = useMemo(() => {
-        if (!videoUrl) return '';
-        if (edits.trim) {
-            return `${videoUrl}#t=${edits.trim.start},${edits.trim.end}`;
+    const mediaSrc = useMemo(() => {
+        if (!mediaUrl) return '';
+        if (mediaType === 'video' && edits?.trim) {
+            return `${mediaUrl}#t=${edits.trim.start},${edits.trim.end}`;
         }
-        return videoUrl;
-    }, [videoUrl, edits.trim]);
+        return mediaUrl;
+    }, [mediaUrl, edits?.trim, mediaType]);
 
     const cropClass = platformCrops[platform] || 'aspect-video';
 
@@ -86,20 +76,22 @@ const PlatformScheduleCard: FC<PlatformCardProps> = ({ platform, content, videoU
 
             <div className="p-4 space-y-3 overflow-y-auto">
                 <div className={`relative w-full bg-black rounded-lg mx-auto ${cropClass}`}>
-                    {videoUrl ? (
+                    {mediaUrl && mediaType === 'video' ? (
                          <video 
-                            key={videoSrc} 
+                            key={mediaSrc} 
                             muted
                             loop
                             playsInline
                             className="w-full h-full object-cover"
-                            style={{ filter: edits.filter && filterMap[edits.filter] ? filterMap[edits.filter] : 'none' }}
+                            style={{ filter: edits?.filter && filterMap[edits.filter] ? filterMap[edits.filter] : 'none' }}
                         >
-                            <source src={videoSrc} type={appContext?.videoData?.file?.type} />
+                            <source src={mediaSrc} type={appContext?.videoData?.file?.type || 'video/mp4'} />
                         </video>
+                    ) : mediaUrl && mediaType === 'image' ? (
+                        <img src={mediaUrl} alt="Generated Content" className="w-full h-full object-cover" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-center p-2">
-                             <p className="text-gray-400 text-sm">No video uploaded.</p>
+                             <p className="text-gray-400 text-sm">No media available.</p>
                         </div>
                     )}
                 </div>
@@ -142,14 +134,19 @@ const GenerationPhase: React.FC = () => {
     const appContext = useContext(AppContext);
     if (!appContext) return null;
 
-    const { generatedContent, setGeneratedContent, videoData, videoUrl, setPhase, posts, setPosts, connectedPlatforms, edits, addActivity } = appContext;
+    const { generatedContent, setGeneratedContent, videoData, videoUrl, imageData, setPhase, posts, setPosts, connectedPlatforms, edits, addActivity, aiConfig, taskModelSelection } = appContext;
     
     const [isSuggestingTimes, setIsSuggestingTimes] = useState(false);
     const [suggestedTimes, setSuggestedTimes] = useState<Partial<Record<Platform, string>>>({});
+    
+    const mediaUrl = videoUrl || imageData?.base64;
+    const mediaType = videoUrl ? 'video' : 'image';
+    const contentType = videoData?.contentType || (imageData ? 'Image Post' : 'General');
+
 
     const connectedAndGeneratedPlatforms = useMemo(() => {
         if (!generatedContent) return [];
-        return (Object.keys(generatedContent) as Platform[]).filter(p => connectedPlatforms[p]);
+        return (Object.keys(generatedContent) as Platform[]).filter(p => connectedPlatforms[p].connected);
     }, [generatedContent, connectedPlatforms]);
     
     const allScheduled = useMemo(() => {
@@ -159,10 +156,10 @@ const GenerationPhase: React.FC = () => {
 
     useEffect(() => {
         const fetchAllBestTimes = async () => {
-            if (videoData?.contentType && connectedAndGeneratedPlatforms.length > 0 && Object.keys(suggestedTimes).length === 0) {
+            if (contentType && connectedAndGeneratedPlatforms.length > 0 && Object.keys(suggestedTimes).length === 0) {
                 setIsSuggestingTimes(true);
                 try {
-                    const times = await generateBestPostTimes(connectedAndGeneratedPlatforms, videoData.contentType);
+                    const times = await generateBestPostTimes(connectedAndGeneratedPlatforms, contentType, { aiConfig, taskModelSelection });
                     const formattedTimes: Partial<Record<Platform, string>> = {};
                     for (const platform of connectedAndGeneratedPlatforms) {
                         if(times[platform]) {
@@ -179,14 +176,14 @@ const GenerationPhase: React.FC = () => {
         };
 
         fetchAllBestTimes();
-    }, [videoData?.contentType, connectedAndGeneratedPlatforms, suggestedTimes]);
+    }, [contentType, connectedAndGeneratedPlatforms, suggestedTimes, aiConfig, taskModelSelection]);
 
 
-    if (!generatedContent || !videoData || !edits) {
+    if (!generatedContent || !mediaUrl) {
         return (
             <div className="text-center py-10">
                 <h2 className="text-2xl font-bold text-gray-400">No content to schedule.</h2>
-                <p className="text-gray-500">Go to the "Create" and "Edit" phases first.</p>
+                <p className="text-gray-500">Go to the "Create" phase first.</p>
             </div>
         );
     }
@@ -226,12 +223,9 @@ const GenerationPhase: React.FC = () => {
             description: selectedContent.description,
             hashtags: selectedContent.hashtags,
             scheduledAt: scheduledAtISO,
-            analytics: { // Initial data
-                views: 0,
-                likes: 0,
-                shares: 0,
-                comments: 0,
-            },
+            mediaUrl: mediaUrl,
+            mediaType: mediaType,
+            analytics: { views: 0, likes: 0, shares: 0, comments: 0 },
             comments: []
         };
         
@@ -274,6 +268,8 @@ const GenerationPhase: React.FC = () => {
                 description: selectedContent.description,
                 hashtags: selectedContent.hashtags,
                 scheduledAt: scheduledAtISO,
+                mediaUrl: mediaUrl,
+                mediaType: mediaType,
                 analytics: { views: 0, likes: 0, shares: 0, comments: 0 },
                 comments: []
             };
@@ -319,7 +315,8 @@ const GenerationPhase: React.FC = () => {
                         key={platform}
                         platform={platform}
                         content={generatedContent[platform]}
-                        videoUrl={videoUrl}
+                        mediaUrl={mediaUrl}
+                        mediaType={mediaType}
                         edits={edits}
                         onContentChange={handleContentChange}
                         onSchedule={handleSchedule}

@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../App';
-import { Post, Platform, AppPhase } from '../types';
+import { Post, Platform, AppPhase, AppContextType } from '../types';
 import { generateAnalyticsForPost } from '../services/geminiService';
 import { YouTubeIcon, InstagramIcon, TikTokIcon, FacebookIcon, PinterestIcon, CloseIcon, TrashIcon, AnalyticsIcon, ResetIcon } from './icons/index';
 import Loader from './Loader';
@@ -14,6 +14,7 @@ const platformIcons: Record<Platform, React.FC<{className?: string}>> = {
 };
 
 const PreviewModal: React.FC<{ post: Post; onClose: () => void; onCancel: (post: Post) => void; onUpdateAnalytics: (postId: string, newAnalytics: Post['analytics']) => void }> = ({ post, onClose, onCancel, onUpdateAnalytics }) => {
+    const appContext = useContext(AppContext as React.Context<AppContextType>);
     const Icon = platformIcons[post.platform];
     const isPastPost = new Date(post.scheduledAt) < new Date();
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -21,7 +22,8 @@ const PreviewModal: React.FC<{ post: Post; onClose: () => void; onCancel: (post:
     const handleRefreshAnalytics = async () => {
         setIsRefreshing(true);
         try {
-            const newAnalytics = await generateAnalyticsForPost(post);
+            const { aiConfig, taskModelSelection } = appContext;
+            const newAnalytics = await generateAnalyticsForPost(post, { aiConfig, taskModelSelection });
             onUpdateAnalytics(post.id, newAnalytics);
         } catch (error) {
             console.error("Failed to refresh analytics:", error);
@@ -41,6 +43,11 @@ const PreviewModal: React.FC<{ post: Post; onClose: () => void; onCancel: (post:
                     <button onClick={onClose} className="text-gray-400 hover:text-white"><CloseIcon/></button>
                 </div>
                 <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                    {post.mediaType === 'video' ? (
+                        <video src={post.mediaUrl} controls muted className="w-full rounded-lg bg-black" />
+                    ) : (
+                        <img src={post.mediaUrl} alt={post.title} className="w-full rounded-lg bg-black" />
+                    )}
                     {isPastPost && (
                         <div>
                             <div className="flex justify-between items-center mb-3">
