@@ -103,6 +103,11 @@ const EditingPhase: React.FC = () => {
         return '16:9';
     }, [videoData]);
 
+    const isTrimApplied = useMemo(() => {
+        if (!suggestions?.trimming || !edits?.trim) return false;
+        return edits.trim.start === suggestions.trimming.startTime && edits.trim.end === suggestions.trimming.endTime;
+    }, [edits?.trim, suggestions?.trimming]);
+
     useEffect(() => {
         if (edits && edits.crop === '16:9' && !editHistory.some(e => e.crop !== '16:9')) { // only set initial if it hasn't been changed
              applyEdit({ crop: recommendedCrop });
@@ -142,7 +147,7 @@ const EditingPhase: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Center Column: Video Player & Tools */}
-                <div className="lg:col-span-2 bg-gray-800 p-6 rounded-lg shadow-xl">
+                <div className="lg:col-span-2 bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl">
                     <div className="relative w-full bg-black rounded-lg mb-4 flex items-center justify-center aspect-video overflow-hidden">
                         {videoUrl ? (
                             <div className={`relative h-full transition-all duration-300 ${cropClasses[edits.crop]}`}>
@@ -158,7 +163,7 @@ const EditingPhase: React.FC = () => {
                                 {edits.overlays.map((overlay, i) =>
                                     <div
                                         key={`applied-overlay-${i}`}
-                                        className={`absolute text-white font-bold p-2 bg-black bg-opacity-60 rounded-lg pointer-events-none w-11/12
+                                        className={`absolute text-white font-bold p-1 md:p-2 bg-black bg-opacity-60 rounded-lg pointer-events-none w-11/12 text-xs sm:text-base
                                             ${positionClasses[overlay.position] || 'bottom-center'}
                                             ${animationClasses[overlay.animation] || ''}
                                             ${overlay.position.includes('center') ? 'animate-slide-up-center' : 'animate-slide-up'}`
@@ -200,7 +205,7 @@ const EditingPhase: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
                              <h3 className="text-lg font-semibold mb-2 text-white">Smart Crop (Aspect Ratio)</h3>
                              <div className="flex flex-wrap items-center gap-2">
@@ -224,7 +229,7 @@ const EditingPhase: React.FC = () => {
                 </div>
 
                 {/* Right Column: AI Suggestions */}
-                <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
+                <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl">
                     <div className="flex items-center gap-3 mb-4">
                         <LightbulbIcon className="w-6 h-6 text-yellow-400" />
                         <h3 className="text-xl font-bold text-white">AI Editing Suite</h3>
@@ -236,8 +241,9 @@ const EditingPhase: React.FC = () => {
                                 {suggestions.trimming ? (
                                      <div className="flex justify-between items-center">
                                         <p className="text-sm text-gray-300">Clip: <b className="text-white">{suggestions.trimming.startTime}s - {suggestions.trimming.endTime}s</b>.<br/><i>{suggestions.trimming.reason}</i></p>
-                                        <button onClick={() => applyEdit({ trim: suggestions.trimming! })} disabled={JSON.stringify(edits.trim) === JSON.stringify(suggestions.trimming)} className="text-xs font-semibold py-1 px-3 rounded-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-green-600 disabled:cursor-not-allowed transition-colors ml-2 flex-shrink-0">
-                                           {JSON.stringify(edits.trim) === JSON.stringify(suggestions.trimming) ? '✓ Applied' : 'Apply'}
+                                        {/* FIX: Map `startTime` to `start` and `endTime` to `end` for the trim object. Also, correct the logic for checking if the trim is applied. */}
+                                        <button onClick={() => applyEdit({ trim: { start: suggestions.trimming!.startTime, end: suggestions.trimming!.endTime } })} disabled={isTrimApplied} className="text-xs font-semibold py-1 px-3 rounded-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-green-600 disabled:cursor-not-allowed transition-colors ml-2 flex-shrink-0">
+                                           {isTrimApplied ? '✓ Applied' : 'Apply'}
                                         </button>
                                     </div>
                                 ) : <p className="text-sm text-gray-400 italic">No trim needed.</p>}

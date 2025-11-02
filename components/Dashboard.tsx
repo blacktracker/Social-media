@@ -16,7 +16,7 @@ const Dashboard: React.FC = () => {
     if (!appContext) return null;
 
     const { setPhase, connectedPlatforms, posts, activityLog } = appContext;
-    const connectedCount = Object.values(connectedPlatforms).filter(Boolean).length;
+    const connectedCount = Object.values(connectedPlatforms).filter(p => p.connected).length;
 
     const now = new Date();
     const upcomingPosts = posts
@@ -79,7 +79,7 @@ const Dashboard: React.FC = () => {
 
             {/* Stats & Upcoming */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-                <div className="lg:col-span-1 grid grid-rows-2 gap-6">
+                <div className="lg:col-span-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
                      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
                         <p className="text-gray-400 text-sm font-medium">Scheduled / Past Posts</p>
                         <p className="text-4xl font-bold text-white">{posts.length - pastPostsCount} / {pastPostsCount}</p>
@@ -99,7 +99,7 @@ const Dashboard: React.FC = () => {
                                 return (
                                     <div key={post.id} className="bg-gray-700/50 p-3 rounded-lg flex items-center gap-4">
                                         <Icon className="w-8 h-8 flex-shrink-0 text-indigo-400" />
-                                        <div className="flex-grow">
+                                        <div className="flex-grow min-w-0">
                                             <p className="font-bold truncate text-white">{post.title}</p>
                                             <p className="text-sm text-gray-400">{post.platform}</p>
                                         </div>
@@ -141,9 +141,9 @@ const Dashboard: React.FC = () => {
                     {activityLog.length > 0 ? (
                         <ul className="space-y-3">
                             {activityLog.map((activity: Activity) => (
-                                <li key={activity.id} className="flex justify-between items-center text-sm text-gray-300 border-b border-gray-700/50 pb-2">
+                                <li key={activity.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-sm text-gray-300 border-b border-gray-700/50 pb-2">
                                     <span>{activity.text}</span>
-                                    <span className="text-xs text-gray-500">{timeAgo(activity.timestamp)}</span>
+                                    <span className="text-xs text-gray-500 mt-1 sm:mt-0">{timeAgo(activity.timestamp)}</span>
                                 </li>
                             ))}
                         </ul>

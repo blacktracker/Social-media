@@ -112,7 +112,7 @@ const PlatformScheduleCard: FC<PlatformCardProps> = ({ platform, content, mediaU
                 <label className="block text-xs font-medium text-gray-300 mb-1">
                     Schedule Time {isSuggestingTime && <span className="text-xs text-yellow-400 ml-2">(AI is suggesting...)</span>}
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                     <input 
                         type="datetime-local" 
                         value={scheduleDateTime}
@@ -286,23 +286,23 @@ const GenerationPhase: React.FC = () => {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
                     <h2 className="text-3xl font-bold text-indigo-400">Phase 3: Review & Schedule</h2>
                     <p className="text-gray-400">Finalize content for each platform and schedule your posts.</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full md:w-auto">
                     <button 
                         onClick={handleScheduleAll}
                         disabled={allScheduled}
-                        className="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                        className="flex-1 md:flex-none bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
                     >
                         Schedule All
                     </button>
                     <button 
                         onClick={() => setPhase(AppPhase.CALENDAR)} 
                         disabled={posts.length === 0}
-                        className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors disabled:bg-indigo-800 disabled:cursor-not-allowed"
+                        className="flex-1 md:flex-none bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors disabled:bg-indigo-800 disabled:cursor-not-allowed"
                     >
                         View Calendar &rarr;
                     </button>

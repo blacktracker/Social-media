@@ -40,9 +40,9 @@ const PreviewModal: React.FC<{ post: Post; onClose: () => void; onCancel: (post:
                         <Icon className="w-6 h-6 text-indigo-400"/>
                         <h3 className="text-xl font-bold text-white">{post.platform} {isPastPost ? 'Report' : 'Preview'}</h3>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white"><CloseIcon/></button>
+                    <button onClick={onClose} className="text-gray-400 hover:text-white"><CloseIcon className="w-6 h-6"/></button>
                 </div>
-                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                <div className="p-4 sm:p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                     {post.mediaType === 'video' ? (
                         <video src={post.mediaUrl} controls muted className="w-full rounded-lg bg-black" />
                     ) : (
@@ -50,7 +50,7 @@ const PreviewModal: React.FC<{ post: Post; onClose: () => void; onCancel: (post:
                     )}
                     {isPastPost && (
                         <div>
-                            <div className="flex justify-between items-center mb-3">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
                                 <h4 className="text-lg font-bold text-gray-100">Post Performance</h4>
                                 <button onClick={handleRefreshAnalytics} disabled={isRefreshing} className="flex items-center gap-2 text-sm bg-gray-700 hover:bg-gray-600 text-white font-semibold py-1 px-3 rounded-lg transition-colors disabled:opacity-50">
                                     {isRefreshing ? <><Loader /> Refreshing...</> : <><ResetIcon className="w-4 h-4" /> Refresh</>}
@@ -59,19 +59,19 @@ const PreviewModal: React.FC<{ post: Post; onClose: () => void; onCancel: (post:
                             <div className="grid grid-cols-2 gap-4 text-center">
                                 <div className="bg-gray-700 p-3 rounded-lg">
                                     <p className="text-sm text-gray-400">Views</p>
-                                    <p className="text-2xl font-bold text-white">{post.analytics.views.toLocaleString()}</p>
+                                    <p className="text-xl sm:text-2xl font-bold text-white">{post.analytics.views.toLocaleString()}</p>
                                 </div>
                                 <div className="bg-gray-700 p-3 rounded-lg">
                                     <p className="text-sm text-gray-400">Likes</p>
-                                    <p className="text-2xl font-bold text-white">{post.analytics.likes.toLocaleString()}</p>
+                                    <p className="text-xl sm:text-2xl font-bold text-white">{post.analytics.likes.toLocaleString()}</p>
                                 </div>
                                 <div className="bg-gray-700 p-3 rounded-lg">
                                     <p className="text-sm text-gray-400">Shares</p>
-                                    <p className="text-2xl font-bold text-white">{post.analytics.shares.toLocaleString()}</p>
+                                    <p className="text-xl sm:text-2xl font-bold text-white">{post.analytics.shares.toLocaleString()}</p>
                                 </div>
                                 <div className="bg-gray-700 p-3 rounded-lg">
                                     <p className="text-sm text-gray-400">Comments</p>
-                                    <p className="text-2xl font-bold text-white">{post.analytics.comments.toLocaleString()}</p>
+                                    <p className="text-xl sm:text-2xl font-bold text-white">{post.analytics.comments.toLocaleString()}</p>
                                 </div>
                             </div>
                             <hr className="my-4 border-gray-600" />
@@ -172,8 +172,8 @@ const CalendarPhase: React.FC = () => {
             <h2 className="text-3xl font-bold text-center mb-2 text-indigo-400">Content Calendar</h2>
             <p className="text-center text-gray-400 mb-8">View your scheduled posts across all platforms.</p>
             
-            <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
-                 <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+            <div className="bg-gray-800 p-2 sm:p-6 rounded-lg shadow-xl">
+                 <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
                     <div className="flex items-center gap-2">
                          <h3 className="text-xl font-bold">{viewMode === 'month' ? currentDate.toLocaleString('default', { month: 'long', year: 'numeric' }) : 'All Scheduled Posts'}</h3>
                          {viewMode === 'month' && (
@@ -183,10 +183,10 @@ const CalendarPhase: React.FC = () => {
                             </>
                          )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                         <div className="flex gap-2 bg-gray-700 p-1 rounded-lg">
-                            <button onClick={() => setViewMode('month')} className={`px-3 py-1 text-sm font-semibold rounded-md ${viewMode === 'month' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-600'}`}>Month View</button>
-                            <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-sm font-semibold rounded-md ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-600'}`}>List View</button>
+                            <button onClick={() => setViewMode('month')} className={`px-3 py-1 text-sm font-semibold rounded-md ${viewMode === 'month' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-600'}`}>Month</button>
+                            <button onClick={() => setViewMode('list')} className={`px-3 py-1 text-sm font-semibold rounded-md ${viewMode === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-600'}`}>List</button>
                         </div>
                         <button onClick={() => setPhase(AppPhase.ANALYTICS)} className="flex items-center gap-2 bg-blue-600 text-white font-bold py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm">
                             <AnalyticsIcon className="w-4 h-4"/> Full Report
@@ -196,7 +196,7 @@ const CalendarPhase: React.FC = () => {
 
                 {viewMode === 'month' ? (
                     <>
-                        <div className="grid grid-cols-7 gap-1 text-center font-bold text-gray-400 mb-2">
+                        <div className="grid grid-cols-7 gap-1 text-center font-bold text-gray-400 mb-2 text-xs sm:text-base">
                             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day}>{day}</div>)}
                         </div>
                         
@@ -205,17 +205,17 @@ const CalendarPhase: React.FC = () => {
                                 const dayPosts = day ? postsByDate[day] : [];
                                 const isPast = day ? new Date(currentDate.getFullYear(), currentDate.getMonth(), day + 1) < new Date() : false;
                                 return (
-                                    <div key={index} className={`h-36 bg-gray-900/50 rounded-md p-1.5 border border-gray-700/50 ${day ? '' : 'opacity-50'} ${isPast ? 'bg-gray-900/80' : ''}`}>
+                                    <div key={index} className={`h-24 md:h-32 lg:h-36 bg-gray-900/50 rounded-md p-1.5 border border-gray-700/50 ${day ? '' : 'opacity-50'} ${isPast ? 'bg-gray-900/80' : ''}`}>
                                         {day && (
                                             <>
-                                                <div className={`font-bold text-sm text-right pr-1 ${isPast ? 'text-gray-500': ''}`}>{day}</div>
+                                                <div className={`font-bold text-xs sm:text-sm text-right pr-1 ${isPast ? 'text-gray-500': ''}`}>{day}</div>
                                                 <div className="space-y-1 overflow-y-auto max-h-28">
                                                     {dayPosts?.map(post => {
                                                         const Icon = platformIcons[post.platform];
                                                         return (
                                                             <div key={post.id} onClick={() => setPreviewPost(post)} className="bg-gray-700 p-1 rounded text-left flex items-center gap-1.5 text-xs cursor-pointer hover:bg-indigo-800" title={post.title}>
                                                                 <Icon className="w-4 h-4 flex-shrink-0"/>
-                                                                <span className="truncate text-gray-200">{post.title}</span>
+                                                                <span className="truncate text-gray-200 hidden sm:inline">{post.title}</span>
                                                             </div>
                                                         )
                                                     })}
@@ -236,7 +236,7 @@ const CalendarPhase: React.FC = () => {
                              return (
                                  <div key={post.id} onClick={() => setPreviewPost(post)} className={`p-4 rounded-lg flex items-center gap-4 cursor-pointer transition-colors ${isPast ? 'bg-gray-900/50 hover:bg-gray-700/70' : 'bg-gray-900/70 hover:bg-gray-700'}`}>
                                      <Icon className={`w-8 h-8 flex-shrink-0 ${isPast ? 'text-gray-500' : 'text-indigo-400'}`}/>
-                                     <div className="flex-grow">
+                                     <div className="flex-grow min-w-0">
                                         <p className={`font-bold truncate ${isPast ? 'text-gray-400' : 'text-white'}`}>{post.title}</p>
                                         <p className="text-sm text-gray-400">{post.platform}</p>
                                      </div>

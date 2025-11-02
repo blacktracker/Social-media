@@ -56,7 +56,7 @@ const ProfilePhase: React.FC = () => {
                     <title>Authenticate with ${platform}</title>
                     <script src="https://cdn.tailwindcss.com"></script>
                 </head>
-                <body class="bg-gray-900 text-white flex items-center justify-center h-screen">
+                <body class="bg-gray-900 text-white flex items-center justify-center h-screen p-4">
                     <div class="bg-gray-800 p-8 rounded-lg shadow-xl text-center w-full max-w-sm">
                         <h1 class="text-2xl font-bold mb-4">AI Social Studio</h1>
                         <p class="text-gray-400 mb-6">is requesting permission to access your ${platform} account.</p>
@@ -147,7 +147,7 @@ const ProfilePhase: React.FC = () => {
             case 'profile':
                 return (
                     <form onSubmit={handleProfileSave} className="space-y-6">
-                        <div className="flex items-center gap-6">
+                        <div className="flex flex-col sm:flex-row items-center gap-6">
                             <div className="w-24 h-24 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-4xl flex-shrink-0">
                                 {user.avatar ? (
                                     <img src={user.avatar} alt="User Avatar" className="w-full h-full rounded-full object-cover" />
@@ -155,7 +155,7 @@ const ProfilePhase: React.FC = () => {
                                     user.name.charAt(0)
                                 )}
                             </div>
-                            <div>
+                            <div className="text-center sm:text-left">
                                 <label htmlFor="avatar-upload" className="block text-sm font-medium text-gray-300 mb-2">Profile Picture</label>
                                 <button type="button" className="bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm">
                                     Upload New Picture
@@ -185,7 +185,7 @@ const ProfilePhase: React.FC = () => {
                             const connection = connectedPlatforms[platform];
                             const details = platformDetails[platform];
                             return (
-                                <div key={platform} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                                <div key={platform} className="flex flex-col sm:flex-row items-center justify-between p-4 bg-gray-700 rounded-lg gap-4">
                                     <div className="flex items-center gap-4">
                                         <span className={details.color}>{details.icon}</span>
                                         <div>
@@ -198,7 +198,7 @@ const ProfilePhase: React.FC = () => {
                                     <button 
                                         onClick={() => connection.connected ? handleDisconnect(platform) : handleConnect(platform)} 
                                         disabled={isConnecting !== null}
-                                        className={`font-bold py-2 px-6 rounded-md transition-colors w-36 text-center disabled:opacity-50 disabled:cursor-wait ${ 
+                                        className={`font-bold py-2 px-6 rounded-md transition-colors w-full sm:w-36 text-center disabled:opacity-50 disabled:cursor-wait ${ 
                                             connection.connected 
                                             ? 'bg-red-600 hover:bg-red-700' 
                                             : 'bg-indigo-600 hover:bg-indigo-700'
@@ -245,7 +245,7 @@ const ProfilePhase: React.FC = () => {
                             </div>
                              <div className="space-y-4">
                                 {(Object.keys(taskLabels) as AITask[]).map(task => (
-                                    <div key={task} className="grid grid-cols-2 items-center">
+                                    <div key={task} className="grid grid-cols-1 md:grid-cols-2 items-center gap-2 md:gap-4">
                                         <label htmlFor={`task-model-${task}`} className="text-sm font-medium text-gray-300">{taskLabels[task]}</label>
                                         <select 
                                             id={`task-model-${task}`} 
@@ -282,13 +282,13 @@ const ProfilePhase: React.FC = () => {
 
             <div className="bg-gray-800 rounded-lg shadow-xl">
                 <div className="border-b border-gray-700">
-                    <nav className="flex space-x-1 p-2" aria-label="Tabs">
-                        <button onClick={() => setActiveTab('profile')} className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'profile' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>Profile</button>
-                        <button onClick={() => setActiveTab('connections')} className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'connections' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>Connections</button>
-                        <button onClick={() => setActiveTab('backend')} className={`px-4 py-2 text-sm font-medium rounded-md ${activeTab === 'backend' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>AI Backend</button>
+                    <nav className="flex space-x-1 p-2 overflow-x-auto" aria-label="Tabs">
+                        <button onClick={() => setActiveTab('profile')} className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap ${activeTab === 'profile' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>Profile</button>
+                        <button onClick={() => setActiveTab('connections')} className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap ${activeTab === 'connections' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>Connections</button>
+                        <button onClick={() => setActiveTab('backend')} className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap ${activeTab === 'backend' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>AI Backend</button>
                     </nav>
                 </div>
-                <div className="p-8">
+                <div className="p-4 sm:p-8">
                     {renderContent()}
                 </div>
             </div>

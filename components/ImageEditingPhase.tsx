@@ -99,11 +99,11 @@ const ImageEditingPhase: React.FC = () => {
             <p className="text-center text-gray-400 mb-8">Use text to magically edit your image.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
+                <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl">
                     <h3 className="font-bold text-xl mb-4 text-white">Original Image</h3>
                     <img src={`data:${imageData.file?.type};base64,${imageData.base64}`} alt="Original" className="w-full rounded-lg" />
                 </div>
-                <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
+                <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl">
                     <h3 className="font-bold text-xl mb-4 text-white">Edited Image</h3>
                     <div className="aspect-square bg-gray-900/50 rounded-lg flex items-center justify-center">
                         {isEditing ? (
@@ -114,7 +114,7 @@ const ImageEditingPhase: React.FC = () => {
                         ) : editedImage ? (
                             <img src={`data:${editedImage.file?.type};base64,${editedImage.base64}`} alt="Edited" className="w-full h-full object-contain rounded-lg" />
                         ) : (
-                             <div className="text-center text-gray-500">
+                             <div className="text-center text-gray-500 p-4">
                                 <ImageIcon className="w-16 h-16 mx-auto"/>
                                 <p>Your edited image will appear here.</p>
                             </div>

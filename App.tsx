@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext } from 'react';
 import { AppPhase, VideoData, GeneratedContent, Post, Platform, AppContextType, EditState, EditingSuggestions, User, AIConfig, AIModel, Activity, Connection, ImageData, TaskModelSelection } from './types';
 import Sidebar from './components/Sidebar';
+import Header from './components/Header';
 import UploadPhase from './components/UploadPhase';
 import EditingPhase from './components/EditingPhase';
 import ImageEditingPhase from './components/ImageEditingPhase';
@@ -16,6 +17,7 @@ export const AppContext = createContext<AppContextType | null>(null);
 
 const App: React.FC = () => {
     const [phase, setPhase] = useState<AppPhase>(AppPhase.DASHBOARD);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [videoData, setVideoData] = useState<VideoData | null>(null);
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     const [imageData, setImageData] = useState<ImageData | null>(null);
@@ -169,10 +171,13 @@ const App: React.FC = () => {
     return (
         <AppContext.Provider value={contextValue}>
             <div className="flex h-screen bg-gray-900 text-white">
-                <Sidebar />
-                <main className="flex-1 p-8 overflow-y-auto">
-                    {renderPhase()}
-                </main>
+                <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+                <div className="flex flex-col flex-1 w-full lg:w-[calc(100%-16rem)]">
+                    <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+                    <main className="flex-1 p-4 md:p-8 overflow-y-auto">
+                        {renderPhase()}
+                    </main>
+                </div>
             </div>
         </AppContext.Provider>
     );

@@ -58,33 +58,33 @@ const AnalyticsPhase: React.FC = () => {
 
             {/* Key Metrics */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl text-center">
                     <h3 className="text-gray-400 text-sm font-medium">Total Views</h3>
-                    <p className="text-3xl font-bold text-white">{totalViews.toLocaleString()}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-white">{totalViews.toLocaleString()}</p>
                 </div>
-                <div className="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl text-center">
                     <h3 className="text-gray-400 text-sm font-medium">Total Likes</h3>
-                    <p className="text-3xl font-bold text-white">{totalLikes.toLocaleString()}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-white">{totalLikes.toLocaleString()}</p>
                 </div>
-                <div className="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl text-center">
                     <h3 className="text-gray-400 text-sm font-medium">Total Shares</h3>
-                    <p className="text-3xl font-bold text-white">{totalShares.toLocaleString()}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-white">{totalShares.toLocaleString()}</p>
                 </div>
-                <div className="bg-gray-800 p-6 rounded-lg shadow-xl text-center">
+                <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl text-center">
                     <h3 className="text-gray-400 text-sm font-medium">Total Comments</h3>
-                    <p className="text-3xl font-bold text-white">{totalComments.toLocaleString()}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-white">{totalComments.toLocaleString()}</p>
                 </div>
             </div>
 
             {/* Chart */}
-            <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
+            <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl">
                 <h3 className="text-xl font-bold mb-4 text-white">Performance by Platform</h3>
                 <div style={{ width: '100%', height: 400 }}>
                     <ResponsiveContainer>
                         <BarChart
                             data={chartData}
                             margin={{
-                                top: 5, right: 30, left: 20, bottom: 5,
+                                top: 5, right: 10, left: -20, bottom: 5,
                             }}
                         >
                             <CartesianGrid strokeDasharray="3 3" stroke="#4A5568" />

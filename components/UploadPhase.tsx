@@ -195,7 +195,7 @@ const StartPhase: React.FC<UploadPhaseProps> = ({ onGenerateFromUpload, onGenera
         ];
         return (
             <div className="border-b border-gray-700 mb-6">
-                <nav className="-mb-px flex space-x-4" aria-label="Tabs">
+                <nav className="-mb-px flex space-x-4 overflow-x-auto" aria-label="Tabs">
                     {tabs.map(tab => (
                         <button key={tab.id} onClick={() => setMode(tab.id)}
                             className={`${mode === tab.id ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-500'}
@@ -214,7 +214,7 @@ const StartPhase: React.FC<UploadPhaseProps> = ({ onGenerateFromUpload, onGenera
             <h2 className="text-3xl font-bold text-center mb-2 text-indigo-400">Phase 1: Create Content</h2>
             <p className="text-center text-gray-400 mb-10">Upload existing media or generate something new with AI.</p>
 
-            <div className="bg-gray-800 p-6 rounded-lg shadow-xl">
+            <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl">
                 {renderTabs()}
                 
                 {mode === 'upload' && (
@@ -288,12 +288,12 @@ const StartPhase: React.FC<UploadPhaseProps> = ({ onGenerateFromUpload, onGenera
 
                 {mode === 'editImage' && (
                     <form onSubmit={handleImageEditSubmit} className="space-y-4 animate-fade-in">
-                        <div className="mt-1 flex items-center gap-4">
-                            <div className="w-48 h-48 bg-gray-700 rounded-lg flex items-center justify-center">
+                        <div className="mt-1 flex flex-col sm:flex-row items-center gap-4">
+                            <div className="w-48 h-48 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
                                 {imagePreview ? <img src={imagePreview} alt="Preview" className="h-full w-full object-cover rounded-lg" /> : <ImageIcon className="w-16 h-16 text-gray-500" />}
                             </div>
-                            <div className="space-y-2">
-                                <label htmlFor="image-edit-upload" className="cursor-pointer bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm">
+                            <div className="space-y-2 text-center sm:text-left">
+                                <label htmlFor="image-edit-upload" className="cursor-pointer bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm inline-block">
                                     <span>Upload Image to Edit</span>
                                     <input id="image-edit-upload" type="file" className="sr-only" onChange={handleImageFileChange} accept="image/*" />
                                 </label>
@@ -307,7 +307,7 @@ const StartPhase: React.FC<UploadPhaseProps> = ({ onGenerateFromUpload, onGenera
                 )}
             </div>
 
-            <div className="bg-gray-800 p-6 rounded-lg shadow-xl mt-8">
+            <div className="bg-gray-800 p-4 sm:p-6 rounded-lg shadow-xl mt-8">
                 <div className="flex items-center gap-4 mb-4">
                     <LightbulbIcon className="w-8 h-8 text-yellow-400"/>
                     <h3 className="text-2xl font-bold text-white">Start with an Idea</h3>
